@@ -1,0 +1,98 @@
+---
+
+#- name: "Creating a S3 bucket"
+#  s3:
+#    profile: "{{ boto_profile | default(omit) }}"
+#    region: eu-west-1
+#    bucket: mybucket-dsad
+#    mode: create
+
+- name: "Get last aws amazon linux"
+  ec2_ami_find:
+    profile: "{{ boto_profile | default(omit) }}"
+    region: eu-west-1
+    name: "amzn-ami-hvm-*"
+    sort: creationDate
+    sort_order: descending
+    sort_end: 1
+  register: ami_find
+- set_fact:
+    aws_ami_id: "{{ ami_find.results[0].ami_id }}"
+
+# Launch an EC2 instance
+#- name: "Launching instance"
+#  ec2:
+#    profile: "{{ boto_profile | default(omit) }}"
+#    region: eu-west-1
+#    image: "{{ aws_ami_id }}"
+#    instance_profile_name: jenkins2
+#    instance_type: m3.medium
+#    instance_tags:
+#      Name: toDelete
+#    key_name: "{{ racker_aws_key_pair }}"
+#    vpc_subnet_id: "{{ racker_aws_subnets }}"
+#    assign_public_ip: yes
+#    group_id: "{{ racker_aws_security_groups }}"
+#    wait: yes
+#ELB
+- name: "Building ELB"
+  local_action:
+    module: ec2_elb_lb
+    profile: "{{ boto_profile | default(omit) }}"
+    region: eu-west-1
+    name: pruebas
+    security_group_ids: "{{ racker_aws_security_groups }}"
+    subnets: "{{racker_aws_subnets}}"
+    scheme: internal
+    state: present
+    purge_instance_ids: true
+    listeners:
+      - protocol: http
+        load_balancer_port: 80
+        instance_port: 80
+  register: elb
+
+- name: "Building launch configuration"
+  ec2_lc:
+    profile: "{{ boto_profile | default(omit) }}"
+    region: eu-west-1
+    name: preubas
+    image_id: "{{ aws_ami_id }}"
+    instance_profile_name: jenkins2
+    key_name: "{{ racker_aws_key_pair }}"
+    security_groups: '{{ racker_aws_security_groups }}'
+    instance_type: m3.medium
+    assign_public_ip: yes
+  register: launch_configuration
+- set_fact:
+    lc_name: "{{ launch_configuration['name'] }}"
+
+- name: "Building ASG"
+  ec2_asg:
+    profile: "{{ boto_profile | default(omit) }}"
+    region: eu-west-1
+    name: pruebas
+    vpc_zone_identifier: "{{ racker_aws_subnets }}"
+    launch_config_name: "{{ lc_name }}"
+    load_balancers: pruebas
+    min_size: 1
+    max_size: 1
+    desired_capacity: 1
+    wait_for_instances: True
+    tags: 
+     - Name: pruebas
+
+- name: "Getting ec2 with tag-name: pruebas and state: running"
+  ec2_remote_facts:
+    profile: "{{ boto_profile | default(omit) }}"
+    region: eu-west-1
+    filters:
+      instance-state-name: running
+      "tag:Name": pruebas
+  register: ec2_info
+
+- name: "Adding hosts"
+  add_host: 
+    name: "{{ item.public_dns_name }}"
+    groups: pruebas
+  with_items: "{{ ec2_info.instances }}"

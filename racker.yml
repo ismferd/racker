@@ -1,0 +1,10 @@
+- hosts: localhost
+  connection: local
+  vars:
+   racker_aws_vpc_id: "vpc-fa77dd9e"
+   racker_aws_key_pair: "global-dev"
+   racker_aws_security_groups: [sg-72722715]
+   racker_aws_subnets: subnet-f059df86
+  tasks:
+   - include: infraestructure.yml
+- include: install.yml

@@ -1,0 +1,9 @@
+- hosts: pruebas
+  connection: ssh
+  remote_user: ec2-user
+  vars_files:
+   - group_vars/all
+  tasks:
+   - name: "install docker"
+     yum: name=docker state=latest
+     become: True
