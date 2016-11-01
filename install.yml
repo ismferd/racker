@@ -1,9 +1,30 @@
-- hosts: pruebas
+- hosts: target_instances
   connection: ssh
   remote_user: ec2-user
-  vars_files:
-   - group_vars/all
   tasks:
    - name: "install docker"
      yum: name=docker state=latest
      become: True
+
+   - name: "install docker-py"
+     pip:
+      executable: pip
+      name: docker-py
+      version: 1.9
+     become: True
+
+   - name: "Start docker daemon"
+     shell: /etc/init.d/docker start
+     become: True
+
+   - name: Start a container with a command
+     docker_container:
+      name: registry
+      image: registry:2
+      ports: "5000:5000"
+      env:
+          REGISTRY_STORAGE: s3
+          REGISTRY_STORAGE_S3_REGION: eu-west-1
+          REGISTRY_STORAGE_S3_BUCKET: registry-pre-dockerimages-global
+      restart_policy: always
+     become: true
