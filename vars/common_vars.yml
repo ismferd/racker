@@ -1,10 +1,10 @@
 ---
-racker_name: registrypruebas
-racker_region: eu-west-1
-racker_aws_vpc_id: "vpc-4aeb6f2f"
-racker_aws_key_pair: "global-pre"
-racker_aws_security_groups: [sg-2a2c144f]
-racker_aws_subnets: [subnet-5778e120, subnet-a91facf0, subnet-11f88974]
-racker_elb_cert_name: elb-to-zuul-pre
-racker_instance_profile: registry
-racker_instance_type: m3.medium
+racker_name: registry_name
+racker_region: aws_zone
+racker_aws_vpc_id: aws_vpc
+racker_aws_key_pair: aws_key_pair
+racker_aws_security_groups: aws_sg
+racker_aws_subnets: aws_subnet
+racker_elb_cert_name: aws_cert_name
+racker_instance_profile: aws_instance_profile_name
+racker_instance_type: aws_instance_type
